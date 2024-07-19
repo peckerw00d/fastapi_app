@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, FastAPI, APIRouter
 from pydantic import BaseModel, validator, field_validator
 from pydantic.networks import EmailStr
 from sqlalchemy import Column, String, Boolean
@@ -61,7 +61,7 @@ class ShowUser(TunedModel):
     is_active: bool
 
 
-class CreateUser(BaseModel):
+class UserCreate(BaseModel):
     name: str
     surname: str
     email: EmailStr
@@ -81,3 +81,32 @@ class CreateUser(BaseModel):
                 status_code=422, detail="Surname must contain only letters"
             )
         return value
+
+
+app = FastAPI(title='My App')
+
+user_router = APIRouter()
+
+
+async def _create_new_user(body: UserCreate) -> ShowUser:
+    async with async_session() as session:
+        async with session.begin():
+            user_dal = UserDAL(session)
+            user = await user_dal.create_user(
+                name=body.name,
+                surname=body.surname,
+                email=body.email,
+            )
+            return ShowUser(
+                user_id=user.user_id,
+                name=user.name,
+                surname=user.surname,
+                email=user.email,
+                is_active=user.is_active,
+            )
+
+
+@user_router.post("/")
+async def create_user(body: UserCreate) -> ShowUser:
+    return await _create_new_user(body)
+
