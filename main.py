@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import HTTPException, FastAPI, APIRouter
 from pydantic import BaseModel, validator, field_validator
 from pydantic.networks import EmailStr
@@ -19,7 +20,7 @@ Base = declarative_base()
 
 
 class User(Base):
-    __tablename__ = 'user'
+    __tablename__ = 'users'
 
     user_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4())
     name = Column(String, nullable=False)
@@ -50,7 +51,7 @@ LETTER_MATCH_PATTERN = re.compile(r'^[а-яА-Яa-zA-Z\-]+$]')
 
 class TunedModel(BaseModel):
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ShowUser(TunedModel):
@@ -66,21 +67,21 @@ class UserCreate(BaseModel):
     surname: str
     email: EmailStr
 
-    @field_validator("name")
-    def validate_name(cls, value):
-        if not LETTER_MATCH_PATTERN.match(value):
-            raise HTTPException(
-                status_code=422, detail="Name must contain only letters"
-            )
-        return value
-
-    @field_validator("surname")
-    def validate_name(cls, value):
-        if not LETTER_MATCH_PATTERN.match(value):
-            raise HTTPException(
-                status_code=422, detail="Surname must contain only letters"
-            )
-        return value
+    # @field_validator("name")
+    # def validate_name(cls, value) -> str:
+    #     if not LETTER_MATCH_PATTERN.match(value):
+    #         raise HTTPException(
+    #             status_code=422, detail="Name must contain only letters"
+    #         )
+    #     return value
+    #
+    # @field_validator("surname")
+    # def validate_name(cls, value):
+    #     if not LETTER_MATCH_PATTERN.match(value):
+    #         raise HTTPException(
+    #             status_code=422, detail="Surname must contain only letters"
+    #         )
+    #     return value
 
 
 app = FastAPI(title='My App')
@@ -110,3 +111,11 @@ async def _create_new_user(body: UserCreate) -> ShowUser:
 async def create_user(body: UserCreate) -> ShowUser:
     return await _create_new_user(body)
 
+main_api_router = APIRouter()
+
+main_api_router.include_router(user_router, prefix="/user", tags=["user"])
+app.include_router(main_api_router)
+
+if __name__ == '__main__':
+    uvicorn.run(app, host="loclhost", port=8000)
+    
