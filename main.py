@@ -46,7 +46,7 @@ class UserDAL:
         return new_user
 
 
-LETTER_MATCH_PATTERN = re.compile(r'^[а-яА-Яa-zA-Z\-]+$]')
+# LETTER_MATCH_PATTERN = re.compile(r'^[а-яА-Яa-zA-Z\-]+$]')
 
 
 class TunedModel(BaseModel):
